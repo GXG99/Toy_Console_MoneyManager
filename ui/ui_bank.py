@@ -2,7 +2,7 @@ from service.srv_transaction import srv_add_transaction, srv_modify_transaction
 from utils.utils_transaction import dt_at_day, dt_of_type, dt_at_period, pt_all,\
     pt_bigger, t_order, e_type, e_lst
 from utils.utils_undo import update_undo
-from binascii import hexlify
+from validators.v_command import convert_command
 
 
 def print_menu():
@@ -40,10 +40,10 @@ def create_menu():
     menu = {}
     menu["ADD"] = ui_add_transaction
     menu["UPDATE"] = srv_modify_transaction
-    menu["D_ATDAY"] = dt_at_day
+    menu["D_ATDAY"] = ui_dt_at_day
     menu["D_TT"] = dt_of_type
     menu["D_ATPERIOD"] = dt_at_period
-    menu["PT_ALL"] = pt_all
+    menu["PT_ALL"] = ui_pt_all
     menu["PT_BIGGER"] = pt_bigger
     menu["T_ORDER"] = t_order
     menu["E_TYPE"] = e_type
@@ -51,23 +51,34 @@ def create_menu():
     return menu
 
 
-def read_numeric(msg, tip):
-    x = input(msg)
-    while True:
-        try:
-            x = tip(x)
-            return x
-        except ValueError:
-            print("Insert a valid integer please: ")
-            x = input()
+def ui_dt_at_day(l, params):
+    error = ""
+    try:
+        day = int(params[0])
+        dt_at_day(l, day)
+    except ValueError:
+        error += "Please insert a valid integer"
+        raise Exception(error)
 
 
-def ui_add_transaction(l):
-    tid = read_numeric("Insert transaction ID: ", int)
-    day = read_numeric("Insert day: ", int)
-    s = read_numeric("Insert sum: ", int)
-    tp = input("Insert type: ")
+def ui_pt_all(l, params):
+    pt_all(l)
+
+
+def ui_add_transaction(l, params):
+    p = convert_command(params)
+    tid = p[0]
+    day = p[1]
+    s = p[2]
+    tp = p[3]
     srv_add_transaction(l, tid, day, s, tp)
+
+
+def ui_get_params(command_text):
+    params = []
+    for x in command_text[1:]:
+        params.append(x)
+    return params
 
 
 def display_ui():
@@ -76,13 +87,14 @@ def display_ui():
     undol = []
     menu = create_menu()
     while True:
-        cmd = input("Choose your command: ")
+        command_text = input("Insert your command: ").split(" ")
+        cmd = command_text[0]
         if cmd == "exit":
             return
         if cmd in menu:
             try:
-                menu[cmd](l)
-                update_undo(l, undol)
+                params = ui_get_params(command_text)
+                menu[cmd](l, params)
             except Exception as ex:
                 print(str(ex))
         else:
