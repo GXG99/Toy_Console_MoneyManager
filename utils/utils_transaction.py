@@ -53,3 +53,39 @@ def dt_at_period(l, ds, df):
 def dt_of_type(l, tp):
     res = [x for x in l if (get_type(x) != tp)]
     l[:] = res
+
+
+def st(l, tp):
+    s = 0
+    for x in l:
+        if get_type(x) == tp:
+            s += get_sum(x)
+    return s
+
+
+def ballance(l, day):
+    s = 0
+    for x in l:
+        if get_day(x) <= day:
+            if get_type(x) == "INCOME":
+                s += get_sum(x)
+            elif get_type(x) == "OUTCOME":
+                s -= get_sum(x)
+    return s
+
+
+def t_order(l, tp):
+    res = []
+    for x in l:
+        if get_type(x) == tp:
+            res.append(x)
+    res.sort(key=get_sum)
+    return res
+
+
+def e_type(l, tp):
+    return [x for x in l if get_type(x) == tp]
+
+
+def e_lst(l, tp, s):
+    return [x for x in l if get_type(x) == tp and get_sum(x) <= s]

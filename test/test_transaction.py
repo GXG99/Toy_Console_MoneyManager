@@ -8,8 +8,9 @@ from template.template_transaction import create_transaction, get_day, get_sum, 
 from validators.v_transaction import validate_transaction
 from repo.repo_transaction import repo_add_transaction
 from service.srv_transaction import srv_add_transaction, srv_modify_transaction
-from utils.utils_transaction import dt_at_day, dt_at_period, dt_of_type, pt_all,\
-    pt_bigger, pt_untilday_bigger
+from utils.utils_transaction import dt_at_day, dt_at_period, dt_of_type, st, ballance, t_order, e_type, e_lst,\
+    pt_all
+from utils.utils_undo import update_undo, undol
 
 
 def test_add_transaction():
@@ -177,6 +178,66 @@ def test_delete_functions():
         assert (get_type(x) != "INCOME")
 
 
+def test_stats_function():
+    l = []
+    srv_add_transaction(l, 42, 5, 1500, "OUTCOME")
+    srv_add_transaction(l, 43, 2, 500, "INCOME")
+    srv_add_transaction(l, 44, 64, 1200, "OUTCOME")
+    srv_add_transaction(l, 45, 21, 5400, "INCOME")
+    srv_add_transaction(l, 46, 5, 7800, "OUTCOME")
+    srv_add_transaction(l, 47, 42, 200, "INCOME")
+    assert st(l, "INCOME") == 6100
+    assert st(l, "OUTCOME") == 10500
+    assert ballance(l, 64) == -4400
+    assert ballance(l, 2) == 500
+    res = t_order(l, "INCOME")
+    for x in res:
+        assert get_type(x) == "INCOME"
+
+
+def test_filter_function():
+    l = []
+    srv_add_transaction(l, 42, 5, 1500, "OUTCOME")
+    srv_add_transaction(l, 43, 2, 500, "INCOME")
+    srv_add_transaction(l, 44, 64, 1200, "OUTCOME")
+    srv_add_transaction(l, 45, 21, 5400, "INCOME")
+    srv_add_transaction(l, 46, 5, 7800, "OUTCOME")
+    srv_add_transaction(l, 47, 42, 200, "INCOME")
+    res = e_type(l, "INCOME")
+    for x in res:
+        assert get_type(x) == "INCOME"
+    res = e_lst(l, "OUTCOME", 1600)
+    for x in res:
+        assert get_type(x) == "OUTCOME" and get_sum(x) <= 1600
+
+
+def test_undo_function():
+    l = []
+    undo = []
+    update_undo(l, undo)
+    srv_add_transaction(l, 42, 5, 1500, "OUTCOME")
+    update_undo(l, undo)
+    srv_add_transaction(l, 43, 2, 500, "INCOME")
+    update_undo(l, undo)
+    srv_add_transaction(l, 44, 64, 1200, "OUTCOME")
+    update_undo(l, undo)
+    srv_add_transaction(l, 45, 21, 5400, "INCOME")
+    update_undo(l, undo)
+    srv_add_transaction(l, 46, 5, 7800, "OUTCOME")
+    update_undo(l, undo)
+    srv_add_transaction(l, 47, 42, 200, "INCOME")
+    update_undo(l, undo)
+    undol(l, undo)
+    t1 = [{'id': 42, 'day': 5, 'sum': 1500, 'type': 'OUTCOME'}, {'id': 43, 'day': 2, 'sum': 500, 'type': 'INCOME'}, {'id': 44, 'day': 64,
+                                                                                                                     'sum': 1200, 'type': 'OUTCOME'}, {'id': 45, 'day': 21, 'sum': 5400, 'type': 'INCOME'}, {'id': 46, 'day': 5, 'sum': 7800, 'type': 'OUTCOME'}]
+
+    assert t1 == l
+    undol(l, undo)
+    t2 = [{'id': 42, 'day': 5, 'sum': 1500, 'type': 'OUTCOME'}, {'id': 43, 'day': 2, 'sum': 500, 'type': 'INCOME'}, {
+        'id': 44, 'day': 64, 'sum': 1200, 'type': 'OUTCOME'}, {'id': 45, 'day': 21, 'sum': 5400, 'type': 'INCOME'}]
+    assert t2 == l
+
+
 def run_all_tests():
     test_add_transaction()
     test_validate_transaction()
@@ -184,3 +245,6 @@ def run_all_tests():
     test_srv_add_transaction()
     test_modify_transaction()
     test_delete_functions()
+    test_stats_function()
+    test_filter_function()
+    test_undo_function()
